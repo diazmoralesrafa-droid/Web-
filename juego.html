@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tres en Raya | Gamer Neon</title>
+
+  <!-- Fuente gamer -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg1:#070014;
+      --bg2:#0b1b2a;
+
+      --neonCyan:#00f5ff;
+      --neonPink:#ff3df2;
+      --neonLime:#7CFF4F;
+      --neonYellow:#ffd400;
+
+      --cellDark:#101427;
+      --cellLight:#1b2444;
+
+      --p1:#00f5ff; /* jugador 1 */
+      --p2:#ff3df2; /* jugador 2 */
+
+      --text:#eaf2ff;
+      --muted:#a6b3d1;
+      --shadow: 0 0 14px rgba(0,245,255,.45);
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:
+        radial-gradient(1200px 600px at 20% 20%, rgba(255,61,242,.12), transparent 60%),
+        radial-gradient(900px 500px at 80% 70%, rgba(0,245,255,.14), transparent 60%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+      color:var(--text);
+      font-family: "Press Start 2P", system-ui, sans-serif;
+      padding: 24px;
+    }
+
+    .app{
+      width:min(720px, 95vw);
+      display:grid;
+      gap:16px;
+      padding:22px;
+      border-radius:18px;
+      background: rgba(8, 10, 24, .68);
+      border: 1px solid rgba(0,245,255,.18);
+      box-shadow:
+        0 10px 40px rgba(0,0,0,.55),
+        0 0 0 1px rgba(255,61,242,.10) inset;
+      backdrop-filter: blur(10px);
+    }
+
+    header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    h1{
+      margin:0;
+      font-size: 18px;
+      letter-spacing:1px;
+      text-shadow: 0 0 10px rgba(255,61,242,.35);
+    }
+
+    .hud{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+
+    .badge{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color:var(--muted);
+      font-size: 10px;
+      line-height:1.4;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .dot{
+      width:10px; height:10px;
+      border-radius:999px;
+      box-shadow: 0 0 12px rgba(0,0,0,.3);
+      flex:0 0 auto;
+    }
+
+    .dot.p1{ background: var(--p1); box-shadow: 0 0 12px rgba(0,245,255,.65); }
+    .dot.p2{ background: var(--p2); box-shadow: 0 0 12px rgba(255,61,242,.65); }
+
+    .turn{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(0,245,255,.22);
+      background: rgba(0,245,255,.08);
+      font-size: 10px;
+      line-height:1.5;
+      color: var(--text);
+      box-shadow: var(--shadow);
+    }
+
+    .boardWrap{
+      display:grid;
+      place-items:center;
+      padding: 10px 0 6px;
+    }
+
+    .board{
+      width:min(420px, 90vw);
+      aspect-ratio: 1 / 1;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+      padding:12px;
+      border-radius:18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: 0 10px 30px rgba(0,0,0,.45);
+      position:relative;
+      overflow:hidden;
+    }
+
+    /* brillo decorativo */
+    .board::before{
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background: radial-gradient(circle at 30% 30%, rgba(0,245,255,.14), transparent 55%),
+                  radial-gradient(circle at 70% 70%, rgba(255,61,242,.12), transparent 55%);
+      filter: blur(10px);
+      pointer-events:none;
+    }
+
+    .cell{
+      position:relative;
+      border:none;
+      border-radius:14px;
+      cursor:pointer;
+      font-family: inherit;
+      font-size: clamp(28px, 7vw, 56px);
+      color: var(--text);
+      display:grid;
+      place-items:center;
+      transition: transform .08s ease, filter .15s ease;
+      user-select:none;
+      z-index:1;
+
+      /* estilo “ajedrez” */
+      background: var(--cellDark);
+      box-shadow:
+        0 8px 16px rgba(0,0,0,.35),
+        0 0 0 1px rgba(255,255,255,.08) inset;
+    }
+    .cell.light{ background: var(--cellLight); }
+
+    .cell:hover{ filter: brightness(1.12); transform: translateY(-2px); }
+    .cell:active{ transform: translateY(0px) scale(.99); }
+
+    .cell[disabled]{
+      cursor:not-allowed;
+      opacity:.95;
+      transform:none;
+    }
+
+    /* fichas */
+    .cell.p1{
+      color: var(--p1);
+      text-shadow: 0 0 14px rgba(0,245,255,.55);
+    }
+    .cell.p2{
+      color: var(--p2);
+      text-shadow: 0 0 14px rgba(255,61,242,.55);
+    }
+
+    /* línea ganadora */
+    .cell.win{
+      outline: 2px solid rgba(255,212,0,.9);
+      box-shadow:
+        0 0 18px rgba(255,212,0,.45),
+        0 0 0 1px rgba(255,255,255,.10) inset;
+      animation: pulse 0.7s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse{
+      from{ transform: translateY(-1px); filter: brightness(1.05); }
+      to{ transform: translateY(-2px); filter: brightness(1.25); }
+    }
+
+    footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top: 2px;
+    }
+
+    .btn{
+      appearance:none;
+      border:none;
+      border-radius:12px;
+      padding:12px 14px;
+      cursor:pointer;
+      font-family: inherit;
+      font-size: 10px;
+      letter-spacing: .5px;
+      color: var(--text);
+      background: linear-gradient(90deg, rgba(0,245,255,.22), rgba(255,61,242,.22));
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: 0 10px 22px rgba(0,0,0,.35);
+      transition: transform .08s ease, filter .15s ease;
+    }
+    .btn:hover{ filter: brightness(1.15); transform: translateY(-2px); }
+    .btn:active{ transform: translateY(0px) scale(.99); }
+
+    .note{
+      font-size: 9px;
+      color: var(--muted);
+      line-height:1.5;
+    }
+
+    /* responsive: reduce paddings */
+    @media (max-width: 420px){
+      .app{ padding:16px; }
+      h1{ font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Juego de Tres en Raya">
+    <header>
+      <div>
+        <h1>TR3S EN RAYA // NEON</h1>
+        <div class="note">Tablero 3×3 tipo ajedrez · 2 jugadores · ¡a por la victoria!</div>
+      </div>
+
+      <div class="hud">
+        <div class="badge" title="Jugador 1">
+          <span class="dot p1"></span>
+          <span>J1: CIAN</span>
+        </div>
+        <div class="badge" title="Jugador 2">
+          <span class="dot p2"></span>
+          <span>J2: ROSA</span>
+        </div>
+        <div id="turnInfo" class="turn" aria-live="polite">Turno: Jugador 1</div>
+      </div>
+    </header>
+
+    <section class="boardWrap">
+      <div id="board" class="board" role="grid" aria-label="Tablero">
+        <!-- Celdas generadas por JS -->
+      </div>
+    </section>
+
+    <footer>
+      <button id="resetBtn" class="btn">REINICIAR</button>
+      <div class="note">Tip: gana con 3 en línea (horizontal, vertical o diagonal).</div>
+    </footer>
+  </main>
+
+  <script>
+    // Estado del juego
+    const boardEl = document.getElementById("board");
+    const turnInfoEl = document.getElementById("turnInfo");
+    const resetBtn = document.getElementById("resetBtn");
+
+    // 0..8
+    let board = Array(9).fill(null); // "X" o "O"
+    let currentPlayer = "X"; // Jugador 1 = X (cian), Jugador 2 = O (rosa)
+    let gameOver = false;
+
+    const playerName = (p) => (p === "X" ? "Jugador 1" : "Jugador 2");
+    const playerClass = (p) => (p === "X" ? "p1" : "p2");
+
+    const winLines = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    function buildBoard(){
+      boardEl.innerHTML = "";
+      for(let i=0;i<9;i++){
+        const btn = document.createElement("button");
+        btn.className = "cell";
+        // Ajedrez: alternar color según fila/col
+        const row = Math.floor(i / 3);
+        const col = i % 3;
+        if ((row + col) % 2 === 1) btn.classList.add("light");
+
+        btn.setAttribute("role","gridcell");
+        btn.setAttribute("aria-label", `Casilla ${i+1}`);
+        btn.dataset.index = i;
+        btn.addEventListener("click", onCellClick);
+        boardEl.appendChild(btn);
+      }
+      render();
+    }
+
+    function render(){
+      const cells = boardEl.querySelectorAll(".cell");
+      cells.forEach((cell, i) => {
+        const val = board[i];
+        cell.textContent = val ? val : "";
+        cell.disabled = gameOver || Boolean(val);
+        cell.classList.remove("p1","p2","win");
+
+        if (val) cell.classList.add(playerClass(val));
+      });
+
+      turnInfoEl.textContent = gameOver
+        ? "Partida finalizada"
+        : `Turno: ${playerName(currentPlayer)}`;
+      // iluminar el turno actual
+      turnInfoEl.style.borderColor = currentPlayer === "X"
+        ? "rgba(0,245,255,.35)"
+        : "rgba(255,61,242,.35)";
+      turnInfoEl.style.background = currentPlayer === "X"
+        ? "rgba(0,245,255,.08)"
+        : "rgba(255,61,242,.08)";
+    }
+
+    function onCellClick(e){
+      if (gameOver) return;
+
+      const idx = Number(e.currentTarget.dataset.index);
+      if (board[idx]) return;
+
+      board[idx] = currentPlayer;
+
+      const winner = checkWinner();
+      if (winner){
+        gameOver = true;
+        highlightWin(winner.line);
+
+        // Mensaje y pregunta para volver a jugar
+        setTimeout(() => {
+          const again = confirm(`${playerName(winner.player)} ha ganado la partida 🎮🔥\n\n¿Desea volver a jugar?`);
+          if (again) resetGame();
+        }, 120);
+        render();
+        return;
+      }
+
+      // Empate
+      if (board.every(v => v !== null)){
+        gameOver = true;
+        setTimeout(() => {
+          const again = confirm(`¡Empate! 🤝\n\n¿Desea volver a jugar?`);
+          if (again) resetGame();
+        }, 120);
+        render();
+        return;
+      }
+
+      // Cambiar turno
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      render();
+    }
+
+    function checkWinner(){
+      for (const line of winLines){
+        const [a,b,c] = line;
+        const v = board[a];
+        if (v && v === board[b] && v === board[c]){
+          return { player: v, line };
+        }
+      }
+      return null;
+    }
+
+    function highlightWin(line){
+      const cells = boardEl.querySelectorAll(".cell");
+      line.forEach(i => cells[i].classList.add("win"));
+    }
+
+    function resetGame(){
+      board = Array(9).fill(null);
+      currentPlayer = "X";
+      gameOver = false;
+      buildBoard();
+    }
+
+    resetBtn.addEventListener("click", resetGame);
+
+    // Inicio
+    buildBoard();
+  </script>
+</body>
+</html>
